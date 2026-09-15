@@ -3,7 +3,9 @@ from fastapi.security import OAuth2PasswordRequestForm
 from sqlmodel import SQLModel,Session,select
 from datetime import timedelta
 from app.database import engine
-from app.auth import hash_password,verify_password,create_access_token
+from app.auth import (
+    hash_password,verify_password,
+    create_access_token,get_current_user)
 from app.models import User
 from app.schemas import UserCreate
 
@@ -65,4 +67,12 @@ def login(form_data:OAuth2PasswordRequestForm=Depends()):
     return {
         "access_token":access_token,
         "token_type":"bearer"
+    }
+
+@router.get("/me")
+def get_me(current_user:User=Depends(get_current_user)):
+    return {
+        "id":current_user.id,
+        "username":current_user.username,
+        "email":current_user.email
     }
