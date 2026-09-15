@@ -16,3 +16,5 @@ app=FastAPI(lifespan=lifespan)
 def home():
     return {"message":"Ai chat app is running"}
 
+
+
