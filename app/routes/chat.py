@@ -3,7 +3,8 @@ from sqlmodel import Session,select
 
 from app.auth import get_current_user
 from app.database import engine
-from app.models import Chat, User
+from app.models import Chat, User, Message
+from app.schemas import MessageCreate
 
 
 router = APIRouter(
@@ -43,7 +44,7 @@ def get_chats(current_user:User=Depends(get_current_user)):
     return chats
 
 @router.get('/{chat_id}')
-def get_chat(chat_id:int,current_user=Depends(get_current_user)):
+def get_chat(chat_id:int,current_user:User=Depends(get_current_user)):
     with Session(engine) as session:
         chat=session.exec(
             select(Chat).where((Chat.id==chat_id) & (Chat.user_id==current_user.id))
@@ -53,4 +54,109 @@ def get_chat(chat_id:int,current_user=Depends(get_current_user)):
             raise HTTPException(status_code=404,detail='chat not found')
     return chat
 
-             
+@router.delete('/{chat_id}')
+def delete_chat(chat_id:int,current_user:User=Depends(get_current_user)):
+    with Session(engine) as session:
+        chat=session.exec(
+            select(Chat).where((Chat.id==chat_id)&(Chat.user_id==current_user.id))
+        ).first()
+
+        if chat is None:
+            raise HTTPException(status_code=404,detail="chat not found")
+
+        session.delete(chat)
+        session.commit()
+
+    return {
+        "message":"chat deleted successfully"
+    }
+
+@router.post('/{chat_id}/messaages')
+def create_message(chat_id:int,
+                   message:MessageCreate,
+                   current_user:User=Depends(get_current_user)):
+    with Session(engine) as  session:
+        chat=session.exec(
+            select(Chat).where(
+                (Chat.id==chat_id)&(Chat.user_id==current_user.id)
+            )
+        ).first()
+
+        if chat is None:
+            raise HTTPException(status_code=404,detail='chat not found')
+
+        new_message=Message(
+            chat_id=chat.id,
+            role="user",
+            content=message.content
+        )
+
+        session.add(new_message)
+        session.commit()
+        session.refresh(new_message)
+
+    return new_message
+
+@router.get("/{chat_id}/messages")
+def get_messages(chat_id:int,
+                 current_user:User=Depends(get_current_user)):
+
+    with Session(engine) as session:
+        chat=session.exec(
+           select(Chat).where( 
+               (Chat.id==chat_id)&(Chat.user_id==current_user.id)
+           )
+        ).first()
+
+        if chat is None:
+            raise HTTPException(
+                status_code=404,detail="chat not found"
+            )
+
+        messages=session.exec(
+            select(Message).where(
+                Message.chat_id==chat_id
+            )
+        ).all()
+
+    return messages
+
+@router.delete("/{chat_id}/messages/{message_id}")
+def delete_message(
+    chat_id: int,
+    message_id: int,
+    current_user: User = Depends(get_current_user)
+):
+    with Session(engine) as session:
+        chat = session.exec(
+            select(Chat).where(
+                (Chat.id == chat_id) &
+                (Chat.user_id == current_user.id)
+            )
+        ).first()
+
+        if chat is None:
+            raise HTTPException(
+                status_code=404,
+                detail="Chat not found"
+            )
+
+        message = session.exec(
+            select(Message).where(
+                (Message.id == message_id) &
+                (Message.chat_id == chat_id)
+            )
+        ).first()
+
+        if message is None:
+            raise HTTPException(
+                status_code=404,
+                detail="Message not found"
+            )
+
+        session.delete(message)
+        session.commit()
+
+    return {
+        "message": "Message deleted successfully"
+    }
