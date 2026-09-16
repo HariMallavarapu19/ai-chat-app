@@ -21,13 +21,13 @@ def register(user:UserCreate):
 
     new_user=User(
         username=user.username,
-        emami=user.email,
-        hashed_password=hash_password
+        email=user.email,
+        hashed_password=hashed_password
     )
 
-    with Session as session:
+    with Session(engine) as session:
         existing_user=session.exec(
-            select(User).where(User.username==user.username|User.email==user.email)
+            select(User).where((User.username==user.username)|(User.email==user.email))
         ).first()
 
         if existing_user:
