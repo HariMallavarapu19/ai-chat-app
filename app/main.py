@@ -2,6 +2,7 @@ from fastapi import FastAPI,HTTPException
 from contextlib import asynccontextmanager
 from app.database import create_db_and_tables,engine
 from app.routes.auth import router as auth_router
+from app.routes.chat import router as chat_router
 
 @asynccontextmanager
 async def lifespan(app:FastAPI):
@@ -10,6 +11,7 @@ async def lifespan(app:FastAPI):
 
 app=FastAPI(lifespan=lifespan)
 app.include_router(auth_router)
+app.include_router(chat_router)
 
 @app.get('/')
 def home():

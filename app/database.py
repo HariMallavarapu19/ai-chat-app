@@ -1,5 +1,5 @@
 from sqlmodel import SQLModel,create_engine,Session
-from app.models import User
+from app.models import User,Chat,Message
 
 sqlite_file_name="chat.db"
 sqlite_url = f"sqlite:///{sqlite_file_name}"
