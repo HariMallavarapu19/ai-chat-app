@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends,HTTPException
 from sqlmodel import Session,select
-
+from app.services.gemini import ask_gemini_with_history,ask_gemini
 from app.auth import get_current_user
 from app.database import engine
 from app.models import Chat, User, Message
@@ -71,7 +71,7 @@ def delete_chat(chat_id:int,current_user:User=Depends(get_current_user)):
         "message":"chat deleted successfully"
     }
 
-@router.post('/{chat_id}/messaages')
+@router.post('/{chat_id}/messages')
 def create_message(chat_id:int,
                    message:MessageCreate,
                    current_user:User=Depends(get_current_user)):
@@ -94,8 +94,44 @@ def create_message(chat_id:int,
         session.add(new_message)
         session.commit()
         session.refresh(new_message)
+    
+        messages=session.exec(
+            select(Message).where(
+                Message.chat_id==chat_id
+            ).order_by(Message.created_at)
+        ).all()
 
-    return new_message
+        ai_response=ask_gemini_with_history(messages)
+        
+        # ai_response=ask_gemini(message.content)
+
+        ai_message=Message(
+            chat_id=chat.id,
+            role="model",
+            content=ai_response
+        )
+
+        session.add(ai_message)
+        session.commit()
+        session.refresh(ai_message)
+
+        result= {
+            "user_message": {
+                "id": new_message.id,
+                "chat_id": new_message.chat_id,
+                "role": new_message.role,
+                "content": new_message.content,
+                "created_at": new_message.created_at
+            },
+            "ai_message": {
+                "id": ai_message.id,
+                "chat_id": ai_message.chat_id,
+                "role": ai_message.role,
+                "content": ai_message.content,
+                "created_at": ai_message.created_at
+            }
+        }
+        return result
 
 @router.get("/{chat_id}/messages")
 def get_messages(chat_id:int,
