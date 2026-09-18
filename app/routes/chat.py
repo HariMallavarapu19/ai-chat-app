@@ -99,8 +99,13 @@ def create_message(chat_id:int,
         messages=session.exec(
             select(Message).where(
                 Message.chat_id==chat_id
-            ).order_by(Message.created_at)
+            ).order_by(Message.created_at.desc())
+            .limit(20)
         ).all()
+
+        messages.reverse()
+
+        
         try:
             ai_response=ask_gemini_with_history(messages)
         except RuntimeError as e:
