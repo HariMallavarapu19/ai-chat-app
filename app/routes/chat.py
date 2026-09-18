@@ -100,9 +100,11 @@ def create_message(chat_id:int,
                 Message.chat_id==chat_id
             ).order_by(Message.created_at)
         ).all()
-
-        ai_response=ask_gemini_with_history(messages)
-        
+        try:
+            ai_response=ask_gemini_with_history(messages)
+        except RuntimeError as e:
+            raise HTTPException(status_code=503,detail=str(e))
+       
         # ai_response=ask_gemini(message.content)
 
         ai_message=Message(
@@ -196,3 +198,8 @@ def delete_message(
     return {
         "message": "Message deleted successfully"
     }
+
+
+
+
+

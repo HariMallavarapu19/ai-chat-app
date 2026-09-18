@@ -25,10 +25,18 @@ def ask_gemini_with_history(messages):
                 }
             ]
         })
-
-    response=client.models.generate_content(
+    try:
+        response=client.models.generate_content(
         model="gemini-3.6-flash",
         contents=contents
-    )
+        )
 
-    return response.text
+        return response.text
+    except Exception as e:
+        print(f"Gemini error:{e}")
+        raise RuntimeError("Gemini Service is temporarily unavailable")
+
+    
+
+
+
