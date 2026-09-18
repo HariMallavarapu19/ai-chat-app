@@ -7,7 +7,7 @@ from app.auth import (
     hash_password,verify_password,
     create_access_token,get_current_user)
 from app.models import User
-from app.schemas import UserCreate
+from app.schemas import UserCreate,UserResponse
 
 
 router=APIRouter(
@@ -69,10 +69,13 @@ def login(form_data:OAuth2PasswordRequestForm=Depends()):
         "token_type":"bearer"
     }
 
-@router.get("/me")
+@router.get("/me",response_model=UserResponse)
 def get_me(current_user:User=Depends(get_current_user)):
     return {
         "id":current_user.id,
         "username":current_user.username,
-        "email":current_user.email
+        "email":current_user.email,
+       
     }
+    
+

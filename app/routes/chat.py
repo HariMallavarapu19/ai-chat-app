@@ -4,7 +4,8 @@ from app.services.gemini import ask_gemini_with_history,ask_gemini
 from app.auth import get_current_user
 from app.database import engine
 from app.models import Chat, User, Message
-from app.schemas import MessageCreate
+from app.schemas import (MessageCreate,
+MessageResponse,CreateMessageResponse,ChatResponse,MessageResponseSimple)
 
 
 router = APIRouter(
@@ -13,11 +14,10 @@ router = APIRouter(
 )
 
 
-@router.post("/")
+@router.post("/",response_model=ChatResponse)
 def create_chat(
     title: str,
-    current_user: User = Depends(get_current_user)
-):
+    current_user: User = Depends(get_current_user)):
     new_chat = Chat(
         user_id=current_user.id,
         title=title
@@ -31,10 +31,11 @@ def create_chat(
     return {
         "id": new_chat.id,
         "title": new_chat.title,
-        "user_id": new_chat.user_id
+        "user_id": new_chat.user_id,
+        "created_at": new_chat.created_at
     }
 
-@router.get('/')
+@router.get('/',response_model=list[ChatResponse])
 def get_chats(current_user:User=Depends(get_current_user)):
     with Session(engine) as session:
         chats=session.exec(
@@ -43,7 +44,7 @@ def get_chats(current_user:User=Depends(get_current_user)):
 
     return chats
 
-@router.get('/{chat_id}')
+@router.get('/{chat_id}',response_model=ChatResponse)
 def get_chat(chat_id:int,current_user:User=Depends(get_current_user)):
     with Session(engine) as session:
         chat=session.exec(
@@ -54,7 +55,7 @@ def get_chat(chat_id:int,current_user:User=Depends(get_current_user)):
             raise HTTPException(status_code=404,detail='chat not found')
     return chat
 
-@router.delete('/{chat_id}')
+@router.delete('/{chat_id}',response_model=MessageResponseSimple)
 def delete_chat(chat_id:int,current_user:User=Depends(get_current_user)):
     with Session(engine) as session:
         chat=session.exec(
@@ -71,7 +72,7 @@ def delete_chat(chat_id:int,current_user:User=Depends(get_current_user)):
         "message":"chat deleted successfully"
     }
 
-@router.post('/{chat_id}/messages')
+@router.post('/{chat_id}/messages',response_model=CreateMessageResponse)
 def create_message(chat_id:int,
                    message:MessageCreate,
                    current_user:User=Depends(get_current_user)):
@@ -135,7 +136,7 @@ def create_message(chat_id:int,
         }
         return result
 
-@router.get("/{chat_id}/messages")
+@router.get("/{chat_id}/messages",response_model=list[MessageResponse])
 def get_messages(chat_id:int,
                  current_user:User=Depends(get_current_user)):
 
@@ -159,7 +160,7 @@ def get_messages(chat_id:int,
 
     return messages
 
-@router.delete("/{chat_id}/messages/{message_id}")
+@router.delete("/{chat_id}/messages/{message_id}",response_model=MessageResponseSimple)
 def delete_message(
     chat_id: int,
     message_id: int,
