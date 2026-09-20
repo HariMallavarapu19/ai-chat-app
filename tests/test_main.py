@@ -98,3 +98,44 @@ def test_login_wrong_password():
     assert response.json()["detail"] == "incorrect username or password"
 
 
+def test_get_me():
+    register_response=client.post(
+        "/auth/register",
+        json={
+            "username":'meuser',
+            'email':"me@example.com",
+            'password':"password123"
+        }
+    )
+
+    assert register_response.status_code==200
+
+    login_response=client.post(
+        "/auth/login",
+        data={
+           "username":"meuser",
+           "password":"password123"
+        }
+    )
+
+    assert login_response.status_code==200
+
+    token=login_response.json()['access_token']
+
+
+    response=client.get(
+        "/auth/me",
+        headers={
+            "Authorization":f"Bearer {token}"
+        }
+    )
+
+    assert response.status_code==200
+
+    data=response.json()
+
+    assert data["username"]=="meuser"
+    assert data['email']=="me@example.com"
+
+
+

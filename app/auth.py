@@ -7,7 +7,7 @@ from jwt.exceptions import InvalidTokenError
 from dotenv import load_dotenv
 from datetime import datetime,timedelta,timezone
 from sqlmodel import Session,select
-from app.database import engine
+from app.database import engine,get_session
 from app.models import User
 
 
@@ -32,7 +32,7 @@ def create_access_token(data:dict,expires_delta:timedelta | None=None) -> str:
         expire=datetime.now(timezone.utc)+timedelta(minutes=15)
 
     to_encode.update({"exp":expire})
-
+ 
     return jwt.encode(
         to_encode,SECRET_KEY,algorithm=ALGORITHM
     )
@@ -59,17 +59,18 @@ def get_current_user_id(token:str=Depends(oauth2_schema)) -> int:
 
 
 def get_current_user(
-        user_id:int=Depends(get_current_user_id)):
+        user_id:int=Depends(get_current_user_id),
+        session:Session=Depends(get_session)):
 
-    with Session(engine) as session:
-        user=session.exec(
-            select(User).where(User.id==user_id)
-        ).first()
+    
+    user=session.exec(
+        select(User).where(User.id==user_id)
+    ).first()
 
-        if  user is None:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="User not found",
-                headers={"WWW-Authenticate":"Bearer"}
-            )
+    if  user is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="User not found",
+            headers={"WWW-Authenticate":"Bearer"}
+        )
     return user
