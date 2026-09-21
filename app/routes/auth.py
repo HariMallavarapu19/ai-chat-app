@@ -15,7 +15,9 @@ router=APIRouter(
     tags=['authentication']
 )
 
-@router.post("/register")
+@router.post("/register",
+    summary="Register a new user",
+    description="Create a new user account with a username, email, and password.")
 def register(user:UserCreate,
              session:Session=Depends(get_session)):
     hashed_password=hash_password(user.password)
@@ -45,7 +47,9 @@ def register(user:UserCreate,
     }
 
 
-@router.post('/login')
+@router.post('/login',
+    summary="Login user",
+    description="Authenticate a user and return a JWT access token.")
 def login(form_data:OAuth2PasswordRequestForm=Depends(),
           session:Session=Depends(get_session)):
    
@@ -71,7 +75,11 @@ def login(form_data:OAuth2PasswordRequestForm=Depends(),
         "token_type":"bearer"
     }
 
-@router.get("/me",response_model=UserResponse)
+@router.get("/me",
+    response_model=UserResponse,
+    summary="Get current user",
+    description="Return the profile of the currently authenticated user."
+)
 def get_me(current_user:User=Depends(get_current_user)):
     return {
         "id":current_user.id,

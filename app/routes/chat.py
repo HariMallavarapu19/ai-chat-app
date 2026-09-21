@@ -14,7 +14,11 @@ router = APIRouter(
 )
 
 
-@router.post("/",response_model=ChatResponse)
+@router.post("/",
+    response_model=ChatResponse,
+    summary="Create a new chat",
+    description="Create a new chat for the currently authenticated user."
+)
 def create_chat(
     title: str,
     current_user: User = Depends(get_current_user),
@@ -36,7 +40,11 @@ def create_chat(
         "created_at": new_chat.created_at
     }
 
-@router.get('/',response_model=list[ChatResponse])
+@router.get('/',
+    response_model=list[ChatResponse],
+    summary="Get user's chats",
+    description="Return all chats belonging to the currently authenticated user."
+)
 def get_chats(current_user:User=Depends(get_current_user),
               session:Session=Depends(get_session)):
 
@@ -46,7 +54,11 @@ def get_chats(current_user:User=Depends(get_current_user),
 
     return chats
 
-@router.get('/{chat_id}',response_model=ChatResponse)
+@router.get('/{chat_id}',
+    response_model=ChatResponse,
+    summary="Get a chat",
+    description="Return a specific chat belonging to the currently authenticated user."
+)
 def get_chat(chat_id:int,
              current_user:User=Depends(get_current_user),
              session:Session=Depends(get_session)
@@ -62,7 +74,11 @@ def get_chat(chat_id:int,
     
     return chat
 
-@router.delete('/{chat_id}',response_model=MessageResponseSimple)
+@router.delete('/{chat_id}',
+    response_model=MessageResponseSimple,
+    summary="Delete a chat",
+    description="Delete a chat and all messages belonging to it."
+)
 def delete_chat(chat_id:int,
                 current_user:User=Depends(get_current_user),
                 session:Session=Depends(get_session)):
@@ -90,7 +106,11 @@ def delete_chat(chat_id:int,
         "message":"chat deleted successfully"
     }
 
-@router.post('/{chat_id}/messages',response_model=CreateMessageResponse)
+@router.post('/{chat_id}/messages',
+    response_model=CreateMessageResponse,
+    summary="Send a message",
+    description="Save a user message and generate an AI response using Gemini."
+)
 def create_message(chat_id:int,
                    message:MessageCreate,
                    current_user:User=Depends(get_current_user),
@@ -161,7 +181,11 @@ def create_message(chat_id:int,
     }
     return result
 
-@router.get("/{chat_id}/messages",response_model=list[MessageResponse])
+@router.get("/{chat_id}/messages",
+    response_model=list[MessageResponse],
+    summary="Get chat messages",
+    description="Return the messages belonging to a specific chat."
+)
 def get_messages(chat_id:int,
                  current_user:User=Depends(get_current_user),
                  session:Session=Depends(get_session)):
@@ -186,7 +210,11 @@ def get_messages(chat_id:int,
 
     return messages
 
-@router.delete("/{chat_id}/messages/{message_id}",response_model=MessageResponseSimple)
+@router.delete("/{chat_id}/messages/{message_id}",
+    response_model=MessageResponseSimple,
+    summary="Delete a message",
+    description="Delete a specific message from a chat."
+)
 def delete_message(
     chat_id: int,
     message_id: int,

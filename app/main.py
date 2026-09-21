@@ -9,7 +9,14 @@ async def lifespan(app:FastAPI):
     create_db_and_tables()
     yield
 
-app=FastAPI(lifespan=lifespan)
+app=FastAPI(title="AI Chat API",
+    description=(
+        "Backend API for an AI chat application "
+        "with JWT authentication, persistent chat history, "
+        "and Gemini integration."
+    ),
+    version="1.0.0",
+    lifespan=lifespan)
 app.include_router(auth_router)
 app.include_router(chat_router)
 
