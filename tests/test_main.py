@@ -138,4 +138,11 @@ def test_get_me():
     assert data['email']=="me@example.com"
 
 
+def test_getme_without_token():
+    response=client.get("/auth/me")
+
+    assert response.status_code==401
+    
+
+
 
