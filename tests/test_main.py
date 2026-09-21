@@ -678,4 +678,69 @@ def test_user_cannot_delete_other_users_chat():
     assert response.status_code == 404
     assert response.json()["detail"] == "chat not found"
 
+def test_get_nonexistent_chat(auth_headers):
+    response = client.get(
+        "/chat/999999",
+        headers=auth_headers
+    )
+
+    assert response.status_code == 404
+    assert response.json()["detail"] == "chat not found"
+
+
+def test_duplicate_registration():
+    user = {
+        "username": "duplicate_user",
+        "email": "duplicate@example.com",
+        "password": "password123"
+    }
+
+    first_response = client.post(
+        "/auth/register",
+        json=user
+    )
+
+    assert first_response.status_code == 200
+
+    second_response = client.post(
+        "/auth/register",
+        json=user
+    )
+
+    assert second_response.status_code == 400
+    assert second_response.json()["detail"] == "already registerd"
+
+def test_invalid_token():
+    headers = {
+        "Authorization": "Bearer this-is-not-a-valid-jwt"
+    }
+
+    response = client.get(
+        "/auth/me",
+        headers=headers
+    )
+
+    assert response.status_code == 401
+    assert response.json()["detail"] == "could not validate credentails"
+
+def test_delete_nonexistent_message(auth_headers):
+    create_response = client.post(
+        "/chat/",
+        params={
+            "title": "Nonexistent Message Test"
+        },
+        headers=auth_headers
+    )
+
+    assert create_response.status_code == 200
+
+    chat_id = create_response.json()["id"]
+
+    response = client.delete(
+        f"/chat/{chat_id}/messages/999999",
+        headers=auth_headers
+    )
+
+    assert response.status_code == 404
+    assert response.json()["detail"] == "Message not found"
 
