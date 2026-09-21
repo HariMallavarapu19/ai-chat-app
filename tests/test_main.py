@@ -414,3 +414,268 @@ def test_delete_message(auth_headers,mock_gemini):
     data=delete_response.json()
 
     assert data['message']=="Message deleted successfully"
+
+
+def test_user_cannot_access_other_users_chat():
+    user_a={
+        "username":'user_a',
+        'email':'user_a@example.com',
+        'password':'password123'
+    }
+
+    user_b = {
+        "username": "user_b",
+        "email": "user_b@example.com",
+        "password": "password123"
+    }
+
+    register_a=client.post(
+        '/auth/register',
+        json=user_a
+    )
+
+    assert register_a.status_code==200
+
+    login_a = client.post(
+        "/auth/login",
+        data={
+            "username": user_a["username"],
+            "password": user_a["password"]
+        }
+    )
+
+    assert login_a.status_code == 200
+
+    token_a = login_a.json()["access_token"]
+
+    headers_a = {
+        "Authorization": f"Bearer {token_a}"
+    }
+
+    create_chat = client.post(
+        "/chat/",
+        params={
+            "title": "User A Private Chat"
+        },
+        headers=headers_a
+    )
+
+    assert create_chat.status_code == 200
+
+    chat_id = create_chat.json()["id"]
+
+    register_b = client.post(
+        "/auth/register",
+        json=user_b
+    )
+
+    assert register_b.status_code == 200
+
+    login_b = client.post(
+        "/auth/login",
+        data={
+            "username": user_b["username"],
+            "password": user_b["password"]
+        }
+    )
+
+    assert login_b.status_code == 200
+
+    token_b = login_b.json()["access_token"]
+
+    headers_b = {
+        "Authorization": f"Bearer {token_b}"
+    }
+
+    response = client.get(
+        f"/chat/{chat_id}",
+        headers=headers_b
+    )
+
+    assert response.status_code == 404
+    assert response.json()["detail"] == "chat not found"
+
+
+def test_user_cannot_access_other_users_messages(mock_gemini):
+    user_a = {
+        "username": "message_user_a",
+        "email": "message_user_a@example.com",
+        "password": "password123"
+    }
+
+    user_b = {
+        "username": "message_user_b",
+        "email": "message_user_b@example.com",
+        "password": "password123"
+    }
+
+    # Register User A
+    register_a = client.post(
+        "/auth/register",
+        json=user_a
+    )
+
+    assert register_a.status_code == 200
+
+    # Login User A
+    login_a = client.post(
+        "/auth/login",
+        data={
+            "username": user_a["username"],
+            "password": user_a["password"]
+        }
+    )
+
+    assert login_a.status_code == 200
+
+    token_a = login_a.json()["access_token"]
+
+    headers_a = {
+        "Authorization": f"Bearer {token_a}"
+    }
+
+    # User A creates a chat
+    create_chat = client.post(
+        "/chat/",
+        params={
+            "title": "User A Message Chat"
+        },
+        headers=headers_a
+    )
+
+    assert create_chat.status_code == 200
+
+    chat_id = create_chat.json()["id"]
+
+    # User A creates a message
+    message_response = client.post(
+        f"/chat/{chat_id}/messages",
+        json={
+            "content": "Private message"
+        },
+        headers=headers_a
+    )
+
+    assert message_response.status_code == 200
+
+    # Register User B
+    register_b = client.post(
+        "/auth/register",
+        json=user_b
+    )
+
+    assert register_b.status_code == 200
+
+    # Login User B
+    login_b = client.post(
+        "/auth/login",
+        data={
+            "username": user_b["username"],
+            "password": user_b["password"]
+        }
+    )
+
+    assert login_b.status_code == 200
+
+    token_b = login_b.json()["access_token"]
+
+    headers_b = {
+        "Authorization": f"Bearer {token_b}"
+    }
+
+    # User B tries to access User A's messages
+    response = client.get(
+        f"/chat/{chat_id}/messages",
+        headers=headers_b
+    )
+
+    assert response.status_code == 404
+    assert response.json()["detail"] == "chat not found"
+
+
+def test_user_cannot_delete_other_users_chat():
+    user_a = {
+        "username": "delete_user_a",
+        "email": "delete_user_a@example.com",
+        "password": "password123"
+    }
+
+    user_b = {
+        "username": "delete_user_b",
+        "email": "delete_user_b@example.com",
+        "password": "password123"
+    }
+
+    # Register User A
+    register_a = client.post(
+        "/auth/register",
+        json=user_a
+    )
+
+    assert register_a.status_code == 200
+
+    # Login User A
+    login_a = client.post(
+        "/auth/login",
+        data={
+            "username": user_a["username"],
+            "password": user_a["password"]
+        }
+    )
+
+    assert login_a.status_code == 200
+
+    token_a = login_a.json()["access_token"]
+
+    headers_a = {
+        "Authorization": f"Bearer {token_a}"
+    }
+
+    # User A creates a chat
+    create_chat = client.post(
+        "/chat/",
+        params={
+            "title": "Private Chat"
+        },
+        headers=headers_a
+    )
+
+    assert create_chat.status_code == 200
+
+    chat_id = create_chat.json()["id"]
+
+    # Register User B
+    register_b = client.post(
+        "/auth/register",
+        json=user_b
+    )
+
+    assert register_b.status_code == 200
+
+    # Login User B
+    login_b = client.post(
+        "/auth/login",
+        data={
+            "username": user_b["username"],
+            "password": user_b["password"]
+        }
+    )
+
+    assert login_b.status_code == 200
+
+    token_b = login_b.json()["access_token"]
+
+    headers_b = {
+        "Authorization": f"Bearer {token_b}"
+    }
+
+    # User B tries to delete User A's chat
+    response = client.delete(
+        f"/chat/{chat_id}",
+        headers=headers_b
+    )
+
+    assert response.status_code == 404
+    assert response.json()["detail"] == "chat not found"
+
+
