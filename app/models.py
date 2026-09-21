@@ -4,8 +4,8 @@ from datetime import datetime,timezone
 
 class User(SQLModel,table=True):
     id:int | None=Field(default=None,primary_key=True)
-    username:str
-    email:str
+    username:str=Field(unique=True)
+    email:str=Field(unique=True)
     hashed_password:str
 
 class Chat(SQLModel,table=True):
