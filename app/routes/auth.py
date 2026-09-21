@@ -1,8 +1,8 @@
-from fastapi import FastAPI,HTTPException,APIRouter,Depends
+from fastapi import HTTPException,APIRouter,Depends
 from fastapi.security import OAuth2PasswordRequestForm
-from sqlmodel import SQLModel,Session,select
+from sqlmodel import Session,select
 from datetime import timedelta
-from app.database import engine,get_session
+from app.database import get_session
 from app.auth import (
     hash_password,verify_password,
     create_access_token,get_current_user)
@@ -12,7 +12,7 @@ from app.schemas import UserCreate,UserResponse
 
 router=APIRouter(
     prefix='/auth',
-    tags=['autentication']
+    tags=['authentication']
 )
 
 @router.post("/register")

@@ -7,6 +7,7 @@ from sqlalchemy.pool import StaticPool
 
 from app.main import app
 from app.database import get_session
+from app.database import Message
 
 
 test_engine = create_engine(
@@ -721,7 +722,7 @@ def test_invalid_token():
     )
 
     assert response.status_code == 401
-    assert response.json()["detail"] == "could not validate credentails"
+    assert response.json()["detail"] == "could not validate credentials"
 
 def test_delete_nonexistent_message(auth_headers):
     create_response = client.post(
@@ -743,4 +744,148 @@ def test_delete_nonexistent_message(auth_headers):
 
     assert response.status_code == 404
     assert response.json()["detail"] == "Message not found"
+
+def test_gemini_failure(mock_gemini, auth_headers, monkeypatch):
+    def fake_gemini_failure(messages):
+        raise RuntimeError("Gemini service is temporarily unavailable")
+
+    monkeypatch.setattr(
+        "app.routes.chat.ask_gemini_with_history",
+        fake_gemini_failure
+    )
+
+    create_response = client.post(
+        "/chat/",
+        params={"title": "Gemini Failure Test"},
+        headers=auth_headers
+    )
+
+    assert create_response.status_code == 200
+
+    chat_id = create_response.json()["id"]
+
+    response = client.post(
+        f"/chat/{chat_id}/messages",
+        json={"content": "Hello"},
+        headers=auth_headers
+    )
+
+    assert response.status_code == 503
+
+def test_gemini_failure_keeps_user_message(auth_headers, monkeypatch):
+    def fake_gemini_failure(messages):
+        raise RuntimeError("Gemini service is temporarily unavailable")
+
+    monkeypatch.setattr(
+        "app.routes.chat.ask_gemini_with_history",
+        fake_gemini_failure
+    )
+
+    # Create chat
+    create_response = client.post(
+        "/chat/",
+        params={"title": "Gemini Failure Persistence Test"},
+        headers=auth_headers
+    )
+
+    assert create_response.status_code == 200
+
+    chat_id = create_response.json()["id"]
+
+    # Try to send a message
+    response = client.post(
+        f"/chat/{chat_id}/messages",
+        json={"content": "This should be saved"},
+        headers=auth_headers
+    )
+
+    # Gemini failed
+    assert response.status_code == 503
+
+    # Check messages stored in database through the API
+    messages_response = client.get(
+        f"/chat/{chat_id}/messages",
+        headers=auth_headers
+    )
+
+    assert messages_response.status_code == 200
+
+    messages = messages_response.json()
+
+    assert len(messages) == 1
+    assert messages[0]["role"] == "user"
+    assert messages[0]["content"] == "This should be saved"
+
+def test_delete_chat_removes_messages(auth_headers, mock_gemini):
+    create_response = client.post(
+        "/chat/",
+        params={"title": "Cascade Delete Test"},
+        headers=auth_headers
+    )
+
+    assert create_response.status_code == 200
+
+    chat_id = create_response.json()["id"]
+
+    message_response = client.post(
+        f"/chat/{chat_id}/messages",
+        json={"content": "Message before deleting chat"},
+        headers=auth_headers
+    )
+
+    assert message_response.status_code == 200
+
+    delete_response = client.delete(
+        f"/chat/{chat_id}",
+        headers=auth_headers
+    )
+
+    assert delete_response.status_code == 200
+
+    messages_response = client.get(
+        f"/chat/{chat_id}/messages",
+        headers=auth_headers
+    )
+
+    assert messages_response.status_code == 404
+
+def test_delete_chat_removes_messages_from_database(
+    auth_headers,
+    mock_gemini
+):
+    # Create a chat
+    create_response = client.post(
+        "/chat/",
+        params={"title": "Database Cascade Test"},
+        headers=auth_headers
+    )
+
+    assert create_response.status_code == 200
+
+    chat_id = create_response.json()["id"]
+
+    # Create a message
+    message_response = client.post(
+        f"/chat/{chat_id}/messages",
+        json={"content": "Message to check"},
+        headers=auth_headers
+    )
+
+    assert message_response.status_code == 200
+
+    message_id = message_response.json()["user_message"]["id"]
+
+    # Delete the chat
+    delete_response = client.delete(
+        f"/chat/{chat_id}",
+        headers=auth_headers
+    )
+
+    assert delete_response.status_code == 200
+
+    # Inspect the database directly
+    with Session(test_engine) as session:
+        message = session.get(Message, message_id)
+
+        assert message is None
 

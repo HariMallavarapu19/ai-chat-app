@@ -7,7 +7,7 @@ from jwt.exceptions import InvalidTokenError
 from dotenv import load_dotenv
 from datetime import datetime,timedelta,timezone
 from sqlmodel import Session,select
-from app.database import engine,get_session
+from app.database import get_session
 from app.models import User
 
 
@@ -37,12 +37,12 @@ def create_access_token(data:dict,expires_delta:timedelta | None=None) -> str:
         to_encode,SECRET_KEY,algorithm=ALGORITHM
     )
 
-oauth2_schema=OAuth2PasswordBearer(tokenUrl="/auth/login")
+oauth2_scheme=OAuth2PasswordBearer(tokenUrl="/auth/login")
 
-def get_current_user_id(token:str=Depends(oauth2_schema)) -> int:
+def get_current_user_id(token:str=Depends(oauth2_scheme)) -> int:
     credentials_exception=HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="could not validate credentails",
+        detail="could not validate credentials",
         headers={"WWW-Authenticate":"Bearer"}
     )
 

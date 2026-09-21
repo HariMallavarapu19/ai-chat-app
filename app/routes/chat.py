@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends,HTTPException
 from sqlmodel import Session,select
-from app.services.gemini import ask_gemini_with_history,ask_gemini
+from app.services.gemini import ask_gemini_with_history
 from app.auth import get_current_user
-from app.database import engine,get_session
+from app.database import get_session
 from app.models import Chat, User, Message
 from app.schemas import (MessageCreate,
 MessageResponse,CreateMessageResponse,ChatResponse,MessageResponseSimple)
@@ -73,6 +73,15 @@ def delete_chat(chat_id:int,
 
     if chat is None:
         raise HTTPException(status_code=404,detail="chat not found")
+
+    messages = session.exec(
+        select(Message).where(
+            Message.chat_id == chat_id
+        )
+    ).all()
+
+    for message in messages:
+        session.delete(message)
 
     session.delete(chat)
     session.commit()
@@ -217,6 +226,8 @@ def delete_message(
     return {
         "message": "Message deleted successfully"
     }
+
+
 
 
 
