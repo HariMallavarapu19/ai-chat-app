@@ -59,7 +59,7 @@ chat_app/
 └── README.md
 
 
-Environment Variables
+## Environment Variables
 
 Create a .env file in the project root:
 
@@ -68,7 +68,7 @@ GEMINI_API_KEY=your-gemini-api-key
 
 Do not commit .env to Git.
 
-Run Locally
+## Run Locally
 1. Create and activate the virtual environment
 
 Windows PowerShell:
@@ -87,7 +87,8 @@ http://localhost:8000
 Swagger documentation:
 
 http://localhost:8000/docs
-Run Tests
+
+## Run Tests
 
 Run the test suite with:
 
@@ -95,7 +96,7 @@ pytest -q
 
 The project currently contains 25 tests covering authentication, authorization, chat operations, message operations, Gemini error handling, and other important API behavior.
 
-Run with Docker
+## Run with Docker
 
 Make sure Docker Desktop is running.
 
@@ -111,7 +112,7 @@ http://localhost:8000
 Swagger:
 
 http://localhost:8000/docs
-Stop the container
+## Stop the container
 
 Press:
 
@@ -120,21 +121,22 @@ Ctrl + C
 or, if the container is running in the background:
 
 docker stop ai-chat-container
-API Overview
-Authentication
+## API Overview
+## Authentication
 POST /auth/register
 POST /auth/login
 GET  /auth/me
-Chats
+## Chats
 POST   /chat/
 GET    /chat/
 GET    /chat/{chat_id}
 DELETE /chat/{chat_id}
-Messages
+## Messages
 POST   /chat/{chat_id}/messages
 GET    /chat/{chat_id}/messages
 DELETE /chat/{chat_id}/messages/{message_id}
-Authentication
+
+## Authentication
 
 Protected endpoints require a JWT access token.
 
@@ -144,7 +146,7 @@ Authorization: Bearer <access_token>
 
 Swagger can be used to test the protected endpoints after logging in.
 
-Architecture
+## Architecture
 
 The application follows a simple layered structure:
 
@@ -162,7 +164,7 @@ AI Response
 
 Chat messages are stored in the database, allowing recent conversation history to be sent to Gemini when generating a response.
 
-Docker Architecture
+## Docker Architecture
 Dockerfile
     ↓
 Docker Image
